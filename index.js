@@ -35,17 +35,23 @@ async function run() {
  const tasksCollection = client.db("tasks").collection("task");
 
     //Auth related apis
-    app.post('/jwt', async (req, res) => {
-        const user = req.body
-        const token = jwt.sign(user, 'secret', {expiresIn: '1h'})
-        res.send(token)
-    })
 
+      // Get tasks for the logged-in user
+      app.get("/tasks", async (req, res) => {
+        try {
+          const { email } = req.query; // Get email from query parameters
+      
+          if (!email) {
+            return res.status(400).json({ error: "Email is required" });
+          }
+      
+          const tasks = await tasksCollection.find({ email }).toArray();
+          res.json(tasks);
+        } catch (error) {
+          res.status(500).json({ error: "Error fetching tasks" });
+        }
+      });
 
-    app.get('/tasks', async(req, res)=>{
-        const result = await tasksCollection.find().toArray();
-        res.send(result)
-      })
     
   // Post tasks data
   app.post("/tasks", async (req, res) => {
@@ -56,33 +62,15 @@ async function run() {
   });  
 
 
-  // Get a specific task by ID
-  app.get("/tasks/:id", async (req, res) => {
-    const id = req.params.id;
-  
-    try {
-      const task = await tasksCollection.findOne({ _id: new ObjectId(id) });
-  
-      if (!task) {
-        return res.status(404).json({ message: "Task not found" });
-      }
-  
-      res.json(task);
-    } catch (error) {
-      console.error("Error fetching task:", error);
-      res.status(500).json({ message: "Failed to fetch task" });
-    }
-  });
-
     // Update tasks
 app.put("/tasks/:id", async (req, res) => {
   const id = req.params.id;
-  const updatedTask = req.body;  // Get the updated task from the request body
+  const updatedTask = req.body; 
   console.log(updatedTask, id)
   try {
     const result = await tasksCollection.updateOne(
-      { _id: new ObjectId(id) },  // Find the task by ID
-      { $set: updatedTask }  // Set the updated data (category in this case)
+      { _id: new ObjectId(id) },  
+      { $set: updatedTask }  
     );
     
     if (result.modifiedCount === 1) {
@@ -97,7 +85,6 @@ app.put("/tasks/:id", async (req, res) => {
 });
 
 
-
   // ✅ DELETE a task
   app.delete("/tasks/:id", async (req, res) => {
 
@@ -105,8 +92,6 @@ app.put("/tasks/:id", async (req, res) => {
     const query = {_id: new ObjectId(id)}
     const result = await tasksCollection.deleteOne(query)
     res.send(result)
-
-    console.log()
 
   });
 
@@ -124,7 +109,7 @@ app.put("/tasks/:id", async (req, res) => {
 
 
 
-app.get('/',(req,res)=>{
+app.get('/',(req, res)=>{
     res.send("Hello From coding!!!!")
 })
 
